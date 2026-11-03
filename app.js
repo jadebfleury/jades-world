@@ -1153,6 +1153,7 @@ const ART_KINDS = [
   { id: "escrita", sticker: "✍️" },
 ];
 let art = store.get("art", []);
+let artOffset = 0;
 
 function renderArt() {
   const list = document.getElementById("art-list");
@@ -1160,7 +1161,10 @@ function renderArt() {
   const save = () => store.set("art", art);
   const form = document.getElementById("art-form");
   if (!form.date.value) form.date.value = iso(new Date());
-  const monthKey = iso(new Date()).slice(0, 7);
+  const now = new Date();
+  const m = new Date(now.getFullYear(), now.getMonth() + artOffset, 1);
+  const monthKey = `${m.getFullYear()}-${pad(m.getMonth() + 1)}`;
+  document.getElementById("art-month").textContent = monthLabel(monthKey);
   document.getElementById("art-counts").replaceChildren(
     ...ART_KINDS.map((k) => {
       const all = art.filter((a) => a.kind === k.id);
@@ -1168,11 +1172,11 @@ function renderArt() {
       return el("div", { className: "art-count" },
         el("span", { className: "art-count-sticker", textContent: k.sticker, ariaHidden: "true" }),
         el("strong", { textContent: month }),
-        el("span", { textContent: `${k.id} este mês` }),
+        el("span", { textContent: `${k.id} ${artOffset === 0 ? "este mês" : "no mês"}` }),
         el("small", { textContent: `${all.length} no total` }));
     })
   );
-  const sorted = [...art].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = art.filter((a) => a.date.startsWith(monthKey)).sort((a, b) => b.date.localeCompare(a.date));
   list.replaceChildren(
     ...sorted.map((a) => {
       const kind = ART_KINDS.find((k) => k.id === a.kind) || ART_KINDS[0];
@@ -1188,8 +1192,11 @@ function renderArt() {
         date, note, del);
     })
   );
-  if (!art.length) list.append(el("li", { className: "empty", textContent: "nenhum check-in ainda." }));
+  if (!sorted.length) list.append(el("li", { className: "empty", textContent: "nenhum check-in neste mês." }));
 }
+
+document.getElementById("art-prev")?.addEventListener("click", () => { artOffset--; renderArt(); });
+document.getElementById("art-next")?.addEventListener("click", () => { artOffset++; renderArt(); });
 
 document.getElementById("art-form")?.addEventListener("submit", (e) => {
   e.preventDefault();

@@ -507,7 +507,7 @@ body:has(.spread:target) #home:not(:target) {
 
 .stamps-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 18px;
   margin-top: 42px;
   align-items: stretch;

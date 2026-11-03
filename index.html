@@ -8,7 +8,7 @@
       name="description"
       content="O scrapbook da Jade."
     />
-    <link rel="stylesheet" href="style.css?v=14" />
+    <link rel="stylesheet" href="style.css?v=18" />
   </head>
   <body>
     <div class="desk" aria-hidden="true"></div>
@@ -68,11 +68,11 @@
         <a class="tab tab-life" href="#scholarships">scholarships</a>
         <a class="tab tab-life" href="#wellness">wellness</a>
         <a class="tab tab-life" href="#hobbies">hobbies</a>
+        <a class="tab tab-life" href="#uf">UF</a>
         <p class="tabs-label">work</p>
         <a class="tab tab-work" href="#enpower">EnPower</a>
         <a class="tab tab-work" href="#brasa">BRASA</a>
         <a class="tab tab-work" href="#ppe">PPE</a>
-        <a class="tab tab-work" href="#uf">UF</a>
       </nav>
 
       <main>
@@ -92,8 +92,8 @@
             <a class="polaroid slot-a tilt-left sway-a" href="#finance">
               <span class="tape tape-gold"></span>
               <img
-                src="https://images.unsplash.com/photo-1633158829875-e5316a358c6f?auto=format&fit=crop&w=800&q=70"
-                alt="Pote de vidro com moedas e uma plantinha brotando."
+                src="https://images.unsplash.com/photo-1587403335644-fa8fef06b261?auto=format&fit=crop&w=800&q=70"
+                alt="Moedas espalhadas sobre uma superfície clara."
               />
               <span class="caption">finance</span>
               <span class="note">contas, metas, o envelope</span>
@@ -102,8 +102,8 @@
             <a class="polaroid slot-b tilt-right sway-b" href="#jobs">
               <span class="tape tape-mint"></span>
               <img
-                src="https://images.unsplash.com/photo-1530042133068-0296a09adf7b?auto=format&fit=crop&w=800&q=70"
-                alt="Mesa em tons pastel com flores, teclado e caderno verde-menta."
+                src="https://images.unsplash.com/photo-1673384131443-0e2c3cb3f934?auto=format&fit=crop&w=800&q=70"
+                alt="Cama desfeita ao lado de uma janela com vista de Manhattan."
               />
               <span class="caption">job applications</span>
               <span class="note">pipeline, follow-ups, yes/no</span>
@@ -160,7 +160,6 @@
               </svg>
               <span class="postmark">ENP</span>
               <strong>EnPower</strong>
-              <em>energia em movimento</em>
             </a>
 
             <a class="postage green" href="#brasa">
@@ -171,7 +170,6 @@
               </svg>
               <span class="postmark">BRA</span>
               <strong>BRASA</strong>
-              <em>casa brasileira</em>
             </a>
 
             <a class="postage denim" href="#ppe">
@@ -182,18 +180,6 @@
               </svg>
               <span class="postmark">PPE</span>
               <strong>PPE</strong>
-              <em>ideias com dente</em>
-            </a>
-
-            <a class="postage uf" href="#uf">
-              <span class="perforation"></span>
-              <svg class="mini-illu gator" viewBox="0 0 80 40" aria-hidden="true">
-                <path d="M4 24 C18 10 40 10 52 22 C60 12 72 16 76 22 C70 28 62 30 52 28 C40 36 18 34 4 24 Z" fill="#2f6b46" />
-                <circle cx="22" cy="18" r="2" fill="#f4ead5" />
-              </svg>
-              <span class="postmark">UF</span>
-              <strong>UF</strong>
-              <em>o semestre em três cadernos</em>
             </a>
           </section>
 
@@ -410,6 +396,11 @@
                 <input name="note" type="text" placeholder="o que rolou? (opcional)" aria-label="Nota" />
                 <button type="submit">+ check-in</button>
               </form>
+              <div class="habits-nav art-nav">
+                <button type="button" id="art-prev" aria-label="Mês anterior">←</button>
+                <span id="art-month"></span>
+                <button type="button" id="art-next" aria-label="Próximo mês">→</button>
+              </div>
               <div id="art-counts" class="art-counts"></div>
               <ul id="art-list" class="art-list"></ul>
             </div>
@@ -504,7 +495,7 @@
         <section id="uf" class="spread spread-blank spread-uf" aria-labelledby="uf-title">
           <div class="blank-page wide-page uf-blank">
             <span class="paperclip" aria-hidden="true"></span>
-            <p class="blank-kicker">work · UF</p>
+            <p class="blank-kicker">life · UF</p>
             <h2 id="uf-title">UF</h2>
             <div class="notebooks">
               <a class="notebook nb-pink" href="#uf-bf" data-notebook="uf-bf">
@@ -725,6 +716,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=18"></script>
   </body>
 </html>
