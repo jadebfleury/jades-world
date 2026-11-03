@@ -675,8 +675,7 @@ function yieldBox(acc, balance) {
   const form = el("div", { className: "yield-form" },
     el("label", {}, el("span", { textContent: "quanto rendeu?" }), el("div", {}, earnedInput, earnedBtn)),
     el("span", { className: "yield-or", textContent: "ou" }),
-    el("label", {}, el("span", { textContent: "saldo que aparece no banco" }), el("div", {}, bankInput, bankBtn)),
-    el("small", { className: "yield-hint", textContent: "com o saldo do banco, o site calcula sozinho quanto rendeu." }));
+    el("label", {}, el("span", { textContent: "saldo que aparece no banco" }), el("div", {}, bankInput, bankBtn)));
   const history = el("ul", { className: "yield-history" },
     ...mine.filter((y) => y.date.startsWith(month)).map((y) => {
       const del = el("button", { type: "button", className: "x", textContent: "×", ariaLabel: "Remover rendimento" });

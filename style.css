@@ -3548,11 +3548,6 @@ select {
   text-align: center;
 }
 
-.yield-hint {
-  font-size: 0.62rem;
-  color: var(--muted);
-}
-
 .yield-history {
   margin: 4px 0 0;
   padding: 0;
