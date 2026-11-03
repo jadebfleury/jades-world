@@ -357,7 +357,8 @@ const monthTotals = (key) => {
   const list = inMonth(key);
   const by = (k) => sumUSD(list.filter((t) => t.kind === k));
   const income = by("in"), out = by("out"), saved = by("savings");
-  return { income, out, saved, net: income - out };
+  // net: didn't spend. left: what stays in the account after moving money to savings (this is what rolls over).
+  return { income, out, saved, net: income - out, left: income - out - saved };
 };
 // What carried into a month: the latest manual start at/before it, plus every month's net since.
 function carryIn(key) {
@@ -371,7 +372,7 @@ function carryIn(key) {
     base = 0;
   }
   let total = base;
-  for (let m = from; m < key; m = shiftMonth(m, 1)) total += monthTotals(m).net;
+  for (let m = from; m < key; m = shiftMonth(m, 1)) total += monthTotals(m).left;
   return total;
 }
 
@@ -430,7 +431,7 @@ function renderSummary() {
       el("strong", { textContent: (value < 0 ? "−" : "") + show(Math.abs(value)) }),
       el("small", { textContent: (value < 0 ? "−" : "") + showOther(Math.abs(value)) }),
       extra || "");
-  const end = rolled ? carry + t.net : t.net;
+  const end = rolled ? carry + t.left : t.net;
   const tiles = [
     tile("entrou", t.income, "in", "💸"),
     tile("saiu", t.out, "out", "🧾"),
@@ -483,7 +484,7 @@ function renderFinChart() {
   const svg = document.getElementById("fin-chart");
   const months = [...Array(6)].map((_, i) => shiftMonth(selectedMonth(), i - 5));
   const rolled = fin.view === "rolled";
-  const nets = months.map((m) => monthTotals(m).net + (rolled ? carryIn(m) : 0));
+  const nets = months.map((m) => (rolled ? carryIn(m) + monthTotals(m).left : monthTotals(m).net));
   const max = Math.max(50, ...nets.map(Math.abs)) * 1.15;
   const W = 360, L = 14, R = 346, top = 26, bottom = 146, mid = (top + bottom) / 2;
   const x = (i) => L + (i / (months.length - 1)) * (R - L);
