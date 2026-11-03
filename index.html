@@ -8,7 +8,7 @@
       name="description"
       content="O scrapbook da Jade."
     />
-    <link rel="stylesheet" href="style.css?v=23" />
+    <link rel="stylesheet" href="style.css?v=38" />
   </head>
   <body>
     <div class="desk" aria-hidden="true"></div>
@@ -259,6 +259,7 @@
           </div>
 
           <div class="fin-grid">
+            <div class="fin-stack">
             <article class="fin-card chart-card">
               <span class="tape tape-pink"></span>
               <h3>surplus / deficit</h3>
@@ -266,6 +267,16 @@
               <p id="fin-chart-note" class="fin-chart-note"></p>
               <p class="fx-note">só do mês: entrou − saiu. rolled over: o que sobrou na conta depois de guardar, somando os meses. convertido na cotação de hoje.</p>
             </article>
+
+            <article class="fin-card spend-card">
+              <span class="tape tape-mint"></span>
+              <h3>onde foi o dinheiro</h3>
+              <div class="spend-pie">
+                <svg id="spend-pie" viewBox="0 0 200 200" role="img" aria-label="Gastos do mês por área"></svg>
+                <ul id="spend-legend" class="spend-legend"></ul>
+              </div>
+            </article>
+            </div>
 
             <article class="fin-card savings-card">
               <span class="tape tape-gold"></span>
@@ -303,7 +314,7 @@
                 <option value="savings">savings / invest</option>
               </select>
               <select name="cat" aria-label="Bucket ou conta"></select>
-              <input name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="valor" required aria-label="Valor" />
+              <input name="amount" type="number" inputmode="decimal" step="0.01" placeholder="valor" required aria-label="Valor (negativo em savings = retirada)" title="Em savings / invest, um valor negativo tira dinheiro da conta" />
               <select name="cur" aria-label="Moeda">
                 <option value="BRL">BRL</option>
                 <option value="USD">USD</option>
@@ -724,6 +735,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=38"></script>
   </body>
 </html>

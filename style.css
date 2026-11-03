@@ -1790,6 +1790,7 @@ select {
 }
 
 .jar {
+  align-content: start;
   --fill: 0%;
   --coin: #e8c46e;
   position: relative;
@@ -2166,6 +2167,7 @@ select {
 }
 
 .ledger tr.savings td:nth-child(5) input { color: var(--denim); font-weight: 700; }
+.ledger tr.savings.withdraw td:nth-child(5) input { color: #9e3320; }
 .ledger tr.in td:nth-child(5) input { color: #3f5f2a; font-weight: 700; }
 .ledger tr.out td:nth-child(5) input { color: #9e3320; font-weight: 700; }
 .ledger td select:disabled { opacity: 0.4; }
@@ -3272,6 +3274,400 @@ select {
   .class-tools {
     grid-template-columns: 1fr;
   }
+}
+
+/* spending by area (pie) */
+
+.fin-stack {
+  display: grid;
+  gap: 26px;
+  align-content: start;
+}
+
+.spend-card {
+  transform: rotate(0.8deg);
+  background:
+    radial-gradient(rgba(91, 128, 170, 0.12) 1px, transparent 1.5px) 0 0 / 12px 12px,
+    #fffdf7;
+}
+
+.spend-pie {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.spend-pie svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 8px rgba(36, 28, 22, 0.15));
+}
+
+.spend-pie .slice {
+  stroke: #fffdf7;
+  stroke-width: 2.5;
+  transition: transform 0.2s ease;
+  transform-origin: 100px 100px;
+}
+
+.spend-pie .slice:hover {
+  transform: scale(1.04);
+}
+
+.spend-pie .pie-hole {
+  fill: #fffdf7;
+}
+
+.spend-pie .pie-empty {
+  fill: #f3ecdc;
+}
+
+.spend-pie .pie-center {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--ink);
+}
+
+.spend-pie .pie-sub {
+  font-family: "Caveat", cursive;
+  font-size: 14px;
+  text-anchor: middle;
+  fill: var(--muted);
+}
+
+.spend-legend {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spend-legend li {
+  display: grid;
+  grid-template-columns: 12px 24px 1fr auto 36px;
+  align-items: center;
+  gap: 6px;
+}
+
+.spend-legend .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fffdf7, 0 0 0 3px rgba(36, 28, 22, 0.12);
+}
+
+.spend-sticker {
+  font-size: 1.15rem;
+  text-align: center;
+  filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(0 2px 2px rgba(36, 28, 22, 0.2));
+}
+
+.spend-label {
+  font-family: "Caveat", cursive;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.spend-amt {
+  font-weight: 700;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.spend-pct {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.spend-legend .empty {
+  display: block;
+  font-family: "Caveat", cursive;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .spend-pie {
+    grid-template-columns: 1fr;
+  }
+
+  .spend-pie svg {
+    max-width: 200px;
+    margin: 0 auto;
+  }
+}
+
+/* deposit / withdraw + rendimento boxes on accounts */
+
+.yield {
+  position: relative;
+  margin-top: 6px;
+  padding: 6px 6px 4px;
+  background: rgba(255, 253, 247, 0.85);
+  border: 1px dashed rgba(95, 112, 68, 0.4);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.yield summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.yield summary::-webkit-details-marker {
+  display: none;
+}
+
+.yield summary::after {
+  content: "💰";
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.yield.moves summary {
+  justify-content: center;
+}
+
+.yield.moves summary::after {
+  content: "✉️";
+  font-size: 1.25rem;
+}
+
+.yield[open] summary::after {
+  transform: rotate(-12deg) scale(1.15);
+}
+
+.yield summary strong {
+  margin-left: auto;
+  font-family: "Caveat", cursive;
+  font-size: 1.1rem;
+  color: #4f6633;
+}
+
+.yield summary strong.neg {
+  color: #a63d24;
+}
+
+.yield-form {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.yield-form label {
+  display: grid;
+  gap: 2px;
+}
+
+.yield-form label > span {
+  font-family: "Caveat", cursive;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.yield-form label > div {
+  display: flex;
+  gap: 4px;
+}
+
+.jar .yield-form input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  background: #fffdf7;
+  border: 1px solid rgba(36, 28, 22, 0.2);
+  text-align: left;
+}
+
+.yield-form button {
+  flex: none;
+  padding: 4px 6px;
+  background: var(--olive);
+  color: #fffdf7;
+  border: none;
+  border-radius: 4px;
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.yield-form label + .yield-or + label button {
+  background: var(--denim);
+}
+
+.move-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid rgba(36, 28, 22, 0.25);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.move-toggle button {
+  padding: 4px 2px;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 0;
+  font-family: "Caveat", cursive;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.move-toggle button[aria-pressed="true"] {
+  background: var(--olive);
+  color: #fffdf7;
+}
+
+.move-toggle button + button[aria-pressed="true"] {
+  background: var(--terracotta);
+}
+
+.move-row {
+  display: flex;
+  gap: 4px;
+}
+
+.yield-or {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.yield-hint {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.yield-history {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yield-history li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.yield-history li span {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.yield-history .x {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+
+.yield small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.62rem;
+}
+
+.acc-tools {
+  position: relative;
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.acc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.acc-actions .yield-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acc-emoji {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.35rem;
+  cursor: pointer;
+  filter: drop-shadow(1.5px 1.5px 0 #fff) drop-shadow(-1.5px -1.5px 0 #fff) drop-shadow(0 2px 2px rgba(36, 28, 22, 0.2));
+  transition: transform 0.15s ease;
+}
+
+.acc-emoji:hover,
+.acc-emoji:focus-visible {
+  transform: scale(1.15) rotate(-6deg);
+  outline: none;
+}
+
+.acc-emoji[aria-pressed="true"] {
+  background: rgba(255, 253, 247, 0.9);
+  transform: scale(1.1) rotate(-8deg);
+}
+
+.yield-pill {
+  padding: 3px 9px;
+  background: #fdf6e3;
+  border: 1px dashed rgba(95, 112, 68, 0.45);
+  border-radius: 999px;
+  font-family: "Caveat", cursive;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #4f6633;
+  white-space: nowrap;
+}
+
+.yield-pill.neg {
+  color: #a63d24;
+}
+
+.acc-panel {
+  min-width: 0;
+  overflow: hidden;
+  margin-top: 6px;
+  padding: 6px;
+  background: rgba(255, 253, 247, 0.92);
+  border: 1px dashed rgba(36, 28, 22, 0.2);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.yield-total {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.62rem;
+}
+
+.savings-total .earned {
+  background: rgba(95, 112, 68, 0.18);
+  color: #3f4d2a;
 }
 
 @media (max-width: 980px) {

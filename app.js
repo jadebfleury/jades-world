@@ -194,7 +194,15 @@ async function loadFx() {
     const live = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL").then((r) => r.json());
     fx.rate = parseFloat(live.USDBRL.bid);
     fx.updated = new Date(parseInt(live.USDBRL.timestamp, 10) * 1000);
-  } catch {}
+  } catch {
+    // Backup source (daily reference rate) when the live one is down or blocked.
+    try {
+      const latest = await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=BRL").then((r) => r.json());
+      fx.rate = latest.rates.BRL;
+      fx.updated = parseIso(latest.date);
+      fx.daily = true;
+    } catch {}
+  }
   try {
     const start = iso(new Date(Date.now() - 365 * DAY));
     const hist = await fetch(`https://api.frankfurter.dev/v1/${start}..?base=USD&symbols=BRL`).then((r) => r.json());
@@ -225,9 +233,11 @@ function renderFx() {
   }
   rateEl.textContent = (sellingUsd ? fx.rate : 1 / fx.rate).toFixed(4);
   document.getElementById("fx-unit").textContent = sellingUsd ? "R$ por US$ 1" : "US$ por R$ 1";
-  updated.textContent = fx.updated
-    ? "atualizado " + fx.updated.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
-    : "";
+  updated.textContent = !fx.updated
+    ? ""
+    : fx.daily
+      ? "cotação de referência de " + fx.updated.toLocaleDateString("pt-BR")
+      : "atualizado " + fx.updated.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
   const h = fx.history;
   const verdict = document.getElementById("fx-verdict");
@@ -421,6 +431,7 @@ function renderFinance() {
   renderPaydays();
   renderSummary();
   renderFinChart();
+  renderSpendChart();
   renderSavings();
   renderBills();
   renderBuckets();
@@ -548,14 +559,153 @@ function renderFinChart() {
   );
 }
 
+// Spending by area for the selected month, as a pie, biggest slice first.
+const AREA_COLORS = { lazer: "#e8c46e", groceries: "#a9c08a", treats: "#e7a9ab", compras: "#8fb0cf", others: "#c9bba3", fixed: "#c4896a" };
+
+function renderSpendChart() {
+  const svg = document.getElementById("spend-pie");
+  const legend = document.getElementById("spend-legend");
+  const outs = inMonth(selectedMonth()).filter((t) => t.kind === "out");
+  const areas = [...BUCKETS, { id: "fixed", label: "fixed expenses", sticker: "🏠" }]
+    .map((b) => ({ ...b, total: sumUSD(outs.filter((t) => t.cat === b.id)) }))
+    .filter((b) => b.total > 0)
+    .sort((a, b) => b.total - a.total);
+  const all = areas.reduce((a, b) => a + b.total, 0);
+  if (!areas.length) {
+    svg.innerHTML = '<circle cx="100" cy="100" r="80" class="pie-empty" /><text x="100" y="106" class="pie-center">sem gastos</text>';
+    legend.replaceChildren(el("li", { className: "empty", textContent: "nenhum gasto logado neste mês." }));
+    return;
+  }
+  const R = 86, cx = 100, cy = 100;
+  let angle = -Math.PI / 2;
+  let paths = "";
+  areas.forEach((b) => {
+    const frac = b.total / all;
+    const color = AREA_COLORS[b.id];
+    if (frac >= 0.9999) {
+      paths += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${color}" class="slice" />`;
+      return;
+    }
+    const end = angle + frac * Math.PI * 2;
+    const [x1, y1] = [cx + R * Math.cos(angle), cy + R * Math.sin(angle)];
+    const [x2, y2] = [cx + R * Math.cos(end), cy + R * Math.sin(end)];
+    paths += `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${frac > 0.5 ? 1 : 0} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}" class="slice"><title>${b.label}: ${Math.round(frac * 100)}%</title></path>`;
+    angle = end;
+  });
+  // A paper "hole" in the middle with the month total.
+  svg.innerHTML = paths +
+    `<circle cx="${cx}" cy="${cy}" r="44" class="pie-hole" />` +
+    `<text x="${cx}" y="${cy - 4}" class="pie-center">${show(all)}</text>` +
+    `<text x="${cx}" y="${cy + 14}" class="pie-sub">no mês</text>`;
+  legend.replaceChildren(
+    ...areas.map((b) => el("li", {},
+      el("span", { className: "dot", style: `background:${AREA_COLORS[b.id]}` }),
+      el("span", { className: "spend-sticker", textContent: b.sticker, ariaHidden: "true" }),
+      el("span", { className: "spend-label", textContent: b.label }),
+      el("span", { className: "spend-amt", textContent: show(b.total) }),
+      el("span", { className: "spend-pct", textContent: Math.round((b.total / all) * 100) + "%" })))
+  );
+}
+
 /* ---------- finance: savings ---------- */
 
 // Each account shows its balance in its own currency; deposits are converted into it.
 const toCur = (amount, from, to) => (from === to ? amount : from === "USD" ? amount * rate() : amount / rate());
 
+// Returns (rendimento) are logged per account in the account's own currency, apart from the ledger,
+// so they grow the balance without counting as income or spending.
+let yields = store.get("yields", []);
+const saveYields = () => store.set("yields", yields);
+
 function accountBalance(acc) {
   const deposits = tx.filter((t) => t.kind === "savings" && t.cat === acc.id).reduce((a, t) => a + toCur(t.amount, t.cur, acc.cur), 0);
-  return { deposits, balance: (acc.base || 0) + deposits };
+  const earned = yields.filter((y) => y.acc === acc.id).reduce((a, y) => a + y.amount, 0);
+  return { deposits, earned, balance: (acc.base || 0) + deposits + earned };
+}
+
+// Envelope: pick depósito or resgate, then type the amount; logged in the ledger as savings (resgate is negative).
+function moveBox(acc) {
+  const sym = acc.cur === "BRL" ? "R$" : "US$";
+  let mode = "in";
+  const pick = (value, label) => {
+    const btn = el("button", { type: "button", textContent: label, ariaPressed: String(mode === value) });
+    btn.addEventListener("click", () => {
+      mode = value;
+      toggle.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+    });
+    return btn;
+  };
+  const toggle = el("div", { className: "move-toggle", role: "group", ariaLabel: "Depósito ou resgate" }, pick("in", "depósito"), pick("out", "resgate"));
+  const input = el("input", { type: "number", step: "0.01", min: "0", placeholder: sym, ariaLabel: "Valor" });
+  const btn = el("button", { type: "button", textContent: "registrar" });
+  btn.addEventListener("click", () => {
+    const v = Math.abs(parseFloat(input.value));
+    if (!v) { input.focus(); return; }
+    tx.push({ id: uid(), date: entryDate(), desc: `${mode === "in" ? "depósito" : "resgate"} · ${acc.name}`, kind: "savings", cat: acc.id, amount: mode === "in" ? v : -v, cur: acc.cur });
+    saveFinance();
+    renderFinance();
+  });
+  return el("div", { className: "yield-form" }, toggle, el("div", { className: "move-row" }, input, btn));
+}
+
+function yieldBox(acc, balance) {
+  const month = selectedMonth();
+  const mine = yields.filter((y) => y.acc === acc.id);
+  const thisMonth = mine.filter((y) => y.date.startsWith(month)).reduce((a, y) => a + y.amount, 0);
+  const total = mine.reduce((a, y) => a + y.amount, 0);
+  const sign = (v) => (v < 0 ? "− " : "+ ") + money(Math.abs(v), acc.cur);
+
+  const sym = acc.cur === "BRL" ? "R$" : "US$";
+  const log = (amount) => {
+    if (!amount) return;
+    yields.push({ id: uid(), acc: acc.id, date: entryDate(), amount: Math.round(amount * 100) / 100 });
+    saveYields();
+    renderFinance();
+  };
+  // Two ways in: type how much it earned, or type the balance the bank shows and let the difference be the earnings.
+  const earnedInput = el("input", { type: "number", step: "0.01", placeholder: sym, ariaLabel: "Quanto rendeu" });
+  const earnedBtn = el("button", { type: "button", textContent: "somar" });
+  earnedBtn.addEventListener("click", () => log(parseFloat(earnedInput.value)));
+  const bankInput = el("input", { type: "number", step: "0.01", placeholder: sym, ariaLabel: "Saldo que aparece no banco" });
+  const bankBtn = el("button", { type: "button", textContent: "atualizar" });
+  bankBtn.addEventListener("click", () => {
+    const v = parseFloat(bankInput.value);
+    if (!isNaN(v)) log(v - balance);
+  });
+  const form = el("div", { className: "yield-form" },
+    el("label", {}, el("span", { textContent: "quanto rendeu?" }), el("div", {}, earnedInput, earnedBtn)),
+    el("span", { className: "yield-or", textContent: "ou" }),
+    el("label", {}, el("span", { textContent: "saldo que aparece no banco" }), el("div", {}, bankInput, bankBtn)),
+    el("small", { className: "yield-hint", textContent: "com o saldo do banco, o site calcula sozinho quanto rendeu." }));
+  const history = el("ul", { className: "yield-history" },
+    ...mine.filter((y) => y.date.startsWith(month)).map((y) => {
+      const del = el("button", { type: "button", className: "x", textContent: "×", ariaLabel: "Remover rendimento" });
+      del.addEventListener("click", () => { yields = yields.filter((x) => x !== y); saveYields(); renderFinance(); });
+      return el("li", {}, el("span", { textContent: `${y.date.slice(8)}/${y.date.slice(5, 7)}` }), el("strong", { textContent: sign(y.amount) }), del);
+    }));
+  return {
+    figure: el("span", { className: "yield-pill" + (thisMonth < 0 ? " neg" : ""), textContent: sign(thisMonth).replace(" ", "") }),
+    panel: el("div", {}, form, history, el("small", { className: "yield-total", textContent: `total desde o início: ${sign(total)}` })),
+  };
+}
+
+// Emoji buttons on each account: ✉️ opens depósito/resgate, 💰 opens rendimento (investments only).
+const openPanel = {};
+
+function accountActions(acc, balance, type) {
+  const y = type === "invest" ? yieldBox(acc, balance) : null;
+  const panels = { move: () => moveBox(acc), yield: () => y.panel };
+  const btn = (key, emoji, label) => {
+    const b = el("button", { type: "button", className: "acc-emoji", textContent: emoji, ariaLabel: label, ariaPressed: String(openPanel[acc.id] === key) });
+    b.addEventListener("click", () => {
+      openPanel[acc.id] = openPanel[acc.id] === key ? null : key;
+      renderSavings();
+    });
+    return b;
+  };
+  const row = el("div", { className: "acc-actions" }, btn("move", "✉️", "depósito ou resgate"), y ? btn("yield", "💰", "rendimento") : "", y ? y.figure : "");
+  const open = openPanel[acc.id];
+  return el("div", { className: "acc-tools" }, row, open && panels[open] ? el("div", { className: "acc-panel" }, panels[open]()) : "");
 }
 
 function renderAccountList(listId, type) {
@@ -576,7 +726,8 @@ function renderAccountList(listId, type) {
         el("strong", { className: "jar-balance", textContent: money(balance, acc.cur) }),
         el("small", { className: "jar-usd", textContent: "≈ " + money(toCur(balance, acc.cur, other), other) }),
         el("label", { className: "jar-base" }, el("span", { textContent: `saldo base ${acc.cur === "BRL" ? "R$" : "US$"}` }), base),
-        el("small", { textContent: deposits ? `+ ${money(deposits, acc.cur)} guardado aqui` : "nenhum depósito logado" }));
+        el("small", { textContent: deposits > 0 ? `+ ${money(deposits, acc.cur)} guardado aqui` : deposits < 0 ? `− ${money(-deposits, acc.cur)} retirado` : "", hidden: !deposits }),
+        accountActions(acc, balance, type));
       li.dataset.balance = toCur(balance, acc.cur, "BRL");
       return li;
     })
@@ -595,7 +746,10 @@ function renderSavings() {
   const saved = renderAccountList("savings-list", "savings");
   const invested = renderAccountList("invest-list", "invest");
   const total = saved + invested;
+  const month = selectedMonth();
+  const earnedBRL = yields.filter((y) => y.date.startsWith(month)).reduce((a, y) => a + toCur(y.amount, accounts.find((x) => x.id === y.acc)?.cur || "BRL", "BRL"), 0);
   document.getElementById("savings-total").replaceChildren(
+    el("span", { className: "earned", textContent: `rendeu no mês ${earnedBRL < 0 ? "−" : "+"}${money(Math.abs(earnedBRL), "BRL")}` }),
     el("span", { textContent: `savings ${money(saved, "BRL")}` }),
     el("span", { textContent: `investimentos ${money(invested, "BRL")}` }),
     el("span", { className: "all", textContent: `total ${money(total, "BRL")} · ≈ ${money(total / rate(), "USD")}` })
@@ -756,14 +910,15 @@ function renderLedger() {
       fillSelect(cat, row.kind, row.cat);
       kind.addEventListener("change", () => { row.kind = kind.value; fillSelect(cat, row.kind); row.cat = cat.value; delete row.bill; commit(); });
       cat.addEventListener("change", () => { row.cat = cat.value; commit(); });
-      const amount = el("input", { type: "number", step: "0.01", min: "0", value: row.amount, ariaLabel: "Valor" });
+      // Negative amounts are allowed: a negative savings entry is a withdrawal from that account.
+      const amount = el("input", { type: "number", step: "0.01", value: row.amount, ariaLabel: "Valor" });
       amount.addEventListener("change", () => { row.amount = parseFloat(amount.value) || 0; commit(); });
       const cur = el("select", { ariaLabel: "Moeda" }, el("option", { textContent: "USD" }), el("option", { textContent: "BRL" }));
       cur.value = row.cur;
       cur.addEventListener("change", () => { row.cur = cur.value; commit(); });
       const del = el("button", { type: "button", className: "x", textContent: "×", ariaLabel: "Remover linha" });
       del.addEventListener("click", () => { tx = tx.filter((r) => r !== row); commit(); });
-      return el("tr", { className: row.kind },
+      return el("tr", { className: row.kind + (row.kind === "savings" && row.amount < 0 ? " withdraw" : "") },
         el("td", {}, date), el("td", {}, desc), el("td", {}, kind), el("td", {}, cat),
         el("td", {}, amount), el("td", {}, cur), el("td", {}, del));
     })
