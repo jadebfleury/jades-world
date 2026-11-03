@@ -309,11 +309,24 @@ if (!tx) {
   tx = store.get("ledger", []).map((r) => ({ ...r, date: today, cat: r.kind === "out" ? "others" : "" }));
   store.set("tx", tx);
 }
-let accounts = store.get("accounts", [
-  { id: "acc1", name: "savings 1", base: 0 },
-  { id: "acc2", name: "savings 2", base: 0 },
-  { id: "acc3", name: "savings 3", base: 0 },
-]);
+// Two savings accounts (one in R$, one in US$) and three investment accounts in R$.
+// Each account keeps its base balance in its own currency.
+const DEFAULT_ACCOUNTS = [
+  { id: "acc1", name: "savings R$", type: "savings", cur: "BRL", base: 0 },
+  { id: "acc2", name: "savings US$", type: "savings", cur: "USD", base: 0 },
+  { id: "acc3", name: "investimento 1", type: "invest", cur: "BRL", base: 0 },
+  { id: "acc4", name: "investimento 2", type: "invest", cur: "BRL", base: 0 },
+  { id: "acc5", name: "investimento 3", type: "invest", cur: "BRL", base: 0 },
+];
+let accounts = store.get("accounts", DEFAULT_ACCOUNTS);
+// Older saves had three untyped "savings N" jars; give them the new shape, keeping any custom names.
+if (accounts.some((a) => !a.type)) {
+  accounts = DEFAULT_ACCOUNTS.map((d) => {
+    const old = accounts.find((a) => a.id === d.id);
+    return old ? { ...d, base: old.base || 0, name: /^savings \d$/.test(old.name) ? d.name : old.name } : d;
+  });
+  store.set("accounts", accounts);
+}
 let bills = store.get("bills", [
   { id: "rent", name: "rent", amount: 750, day: 1 },
   { id: "utilities", name: "utilities", amount: null, day: 15 },
@@ -537,40 +550,56 @@ function renderFinChart() {
 
 /* ---------- finance: savings ---------- */
 
-// Savings live in reais: the base balance is typed in R$ and deposits are converted to R$.
-const toBRL = (amount, cur) => (cur === "BRL" ? amount : amount * rate());
+// Each account shows its balance in its own currency; deposits are converted into it.
+const toCur = (amount, from, to) => (from === to ? amount : from === "USD" ? amount * rate() : amount / rate());
 
-function renderSavings() {
-  const list = document.getElementById("savings-list");
-  let total = 0;
+function accountBalance(acc) {
+  const deposits = tx.filter((t) => t.kind === "savings" && t.cat === acc.id).reduce((a, t) => a + toCur(t.amount, t.cur, acc.cur), 0);
+  return { deposits, balance: (acc.base || 0) + deposits };
+}
+
+function renderAccountList(listId, type) {
+  const list = document.getElementById(listId);
+  const mine = accounts.filter((a) => a.type === type);
   list.replaceChildren(
-    ...accounts.map((acc, i) => {
-      const deposits = tx.filter((t) => t.kind === "savings" && t.cat === acc.id).reduce((a, t) => a + toBRL(t.amount, t.cur), 0);
-      const balance = (acc.base || 0) + deposits;
-      total += balance;
+    ...mine.map((acc, i) => {
+      const { deposits, balance } = accountBalance(acc);
+      const other = acc.cur === "BRL" ? "USD" : "BRL";
       const name = el("input", { value: acc.name, className: "acc-name", ariaLabel: "Nome da conta" });
       name.addEventListener("change", () => { acc.name = name.value.trim() || acc.name; saveFinance(); renderFinance(); });
-      const base = el("input", { type: "number", step: "0.01", value: acc.base || "", placeholder: "0", ariaLabel: "Saldo base em reais" });
+      const base = el("input", { type: "number", step: "0.01", value: acc.base || "", placeholder: "0", ariaLabel: `Saldo base em ${acc.cur}` });
       base.addEventListener("change", () => { acc.base = parseFloat(base.value) || 0; saveFinance(); renderFinance(); });
-      const li = el("li", { className: "jar jar-" + (i % 3) },
+      const li = el("li", { className: `jar ${type === "invest" ? "jar-invest" : ""} jar-${i % 3}` },
         el("span", { className: "jar-lid", ariaHidden: "true" }),
+        type === "invest" ? el("span", { className: "jar-sticker", textContent: "📈", ariaHidden: "true" }) : "",
         name,
-        el("strong", { className: "jar-balance", textContent: money(balance, "BRL") }),
-        el("small", { className: "jar-usd", textContent: "≈ " + money(balance / rate(), "USD") }),
-        el("label", { className: "jar-base" }, el("span", { textContent: "saldo base R$" }), base),
-        el("small", { textContent: deposits ? `+ ${money(deposits, "BRL")} guardado aqui` : "nenhum depósito logado" }));
-      li.dataset.balance = balance;
+        el("strong", { className: "jar-balance", textContent: money(balance, acc.cur) }),
+        el("small", { className: "jar-usd", textContent: "≈ " + money(toCur(balance, acc.cur, other), other) }),
+        el("label", { className: "jar-base" }, el("span", { textContent: `saldo base ${acc.cur === "BRL" ? "R$" : "US$"}` }), base),
+        el("small", { textContent: deposits ? `+ ${money(deposits, acc.cur)} guardado aqui` : "nenhum depósito logado" }));
+      li.dataset.balance = toCur(balance, acc.cur, "BRL");
       return li;
     })
   );
-  // Fill each jar relative to the fullest one.
+  // Fill each jar relative to the fullest one in its group.
   const jars = [...list.children];
   const fullest = Math.max(0, ...jars.map((j) => +j.dataset.balance));
   jars.forEach((j) => {
     const b = +j.dataset.balance;
     j.style.setProperty("--fill", fullest > 0 && b > 0 ? `${Math.max(10, (b / fullest) * 78)}%` : "0%");
   });
-  document.getElementById("savings-total").textContent = `total guardado: ${money(total, "BRL")} · ≈ ${money(total / rate(), "USD")}`;
+  return mine.reduce((a, acc) => a + toCur(accountBalance(acc).balance, acc.cur, "BRL"), 0);
+}
+
+function renderSavings() {
+  const saved = renderAccountList("savings-list", "savings");
+  const invested = renderAccountList("invest-list", "invest");
+  const total = saved + invested;
+  document.getElementById("savings-total").replaceChildren(
+    el("span", { textContent: `savings ${money(saved, "BRL")}` }),
+    el("span", { textContent: `investimentos ${money(invested, "BRL")}` }),
+    el("span", { className: "all", textContent: `total ${money(total, "BRL")} · ≈ ${money(total / rate(), "USD")}` })
+  );
 }
 
 /* ---------- finance: fixed expenses ---------- */
@@ -703,7 +732,7 @@ const catOptions = (kind) =>
   kind === "out"
     ? [...BUCKETS.map((b) => [b.id, b.label]), [FIXED.id, FIXED.label]]
     : kind === "savings"
-      ? accounts.map((a) => [a.id, a.name])
+      ? accounts.map((a) => [a.id, `${a.type === "invest" ? "📈 " : "🐷 "}${a.name} (${a.cur === "BRL" ? "R$" : "US$"})`])
       : [["", "—"]];
 const fillSelect = (select, kind, value) => {
   select.replaceChildren(...catOptions(kind).map(([v, l]) => el("option", { value: v, textContent: l })));

@@ -8,7 +8,7 @@
       name="description"
       content="O scrapbook da Jade."
     />
-    <link rel="stylesheet" href="style.css?v=20" />
+    <link rel="stylesheet" href="style.css?v=21" />
   </head>
   <body>
     <div class="desk" aria-hidden="true"></div>
@@ -270,7 +270,9 @@
             <article class="fin-card savings-card">
               <span class="tape tape-gold"></span>
               <h3>savings</h3>
-              <ul id="savings-list" class="savings-list"></ul>
+              <ul id="savings-list" class="savings-list two"></ul>
+              <h3 class="invest-title">investimentos</h3>
+              <ul id="invest-list" class="savings-list"></ul>
               <p id="savings-total" class="savings-total"></p>
             </article>
           </div>
@@ -298,7 +300,7 @@
               <select name="kind" aria-label="Tipo">
                 <option value="in">in</option>
                 <option value="out">out</option>
-                <option value="savings">savings</option>
+                <option value="savings">savings / invest</option>
               </select>
               <select name="cat" aria-label="Bucket ou conta"></select>
               <input name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="valor" required aria-label="Valor" />
@@ -722,6 +724,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
   </body>
 </html>

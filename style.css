@@ -1874,11 +1874,63 @@ select {
   color: var(--muted);
 }
 
+.savings-list.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invest-title {
+  margin-top: 22px !important;
+}
+
+.jar-invest {
+  --coin: #a9c08a;
+  border-radius: 12px;
+  border-color: rgba(95, 112, 68, 0.3);
+}
+
+.jar-invest .jar-lid {
+  display: none;
+}
+
+.jar-invest.jar-1 { --coin: #8fb0cf; }
+.jar-invest.jar-2 { --coin: #e8c46e; }
+
+.jar-sticker {
+  position: absolute !important;
+  top: -12px;
+  right: 6px;
+  font-size: 1.5rem;
+  transform: rotate(10deg);
+  filter: drop-shadow(1.5px 1.5px 0 #fff) drop-shadow(-1.5px -1.5px 0 #fff) drop-shadow(0 2px 2px rgba(36, 28, 22, 0.25));
+}
+
+.jar-invest {
+  overflow: visible;
+}
+
+.jar-invest::before {
+  border-radius: 0 0 10px 10px;
+}
+
 .savings-total {
-  margin: 14px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+}
+
+.savings-total span {
+  padding: 3px 10px;
+  background: rgba(61, 90, 115, 0.1);
+  border-radius: 999px;
   font-family: "Caveat", cursive;
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 700;
+}
+
+.savings-total .all {
+  background: var(--ink);
+  color: #fffdf7;
 }
 
 .bills-card {
