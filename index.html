@@ -8,7 +8,7 @@
       name="description"
       content="O scrapbook da Jade."
     />
-    <link rel="stylesheet" href="style.css?v=18" />
+    <link rel="stylesheet" href="style.css?v=19" />
   </head>
   <body>
     <div class="desk" aria-hidden="true"></div>
@@ -218,9 +218,15 @@
             </div>
           </div>
 
-          <div class="view-toggle fx-toggle" role="group" aria-label="Como ver o mês">
-            <button type="button" data-view="month" aria-pressed="true">só do mês</button>
-            <button type="button" data-view="rolled" aria-pressed="false">rolled over</button>
+          <div class="fin-toggles">
+            <div class="view-toggle fx-toggle" role="group" aria-label="Como ver o mês">
+              <button type="button" data-view="month" aria-pressed="true">só do mês</button>
+              <button type="button" data-view="rolled" aria-pressed="false">rolled over</button>
+            </div>
+            <div class="base-toggle fx-toggle" role="group" aria-label="Moeda principal">
+              <button type="button" data-base="BRL" aria-pressed="true">R$</button>
+              <button type="button" data-base="USD" aria-pressed="false">US$</button>
+            </div>
           </div>
           <div id="fin-summary" class="fin-summary"></div>
 
@@ -258,7 +264,7 @@
               <h3>surplus / deficit</h3>
               <svg id="fin-chart" class="fin-chart" viewBox="0 0 360 180" role="img" aria-label="Surplus ou deficit dos últimos seis meses"></svg>
               <p id="fin-chart-note" class="fin-chart-note"></p>
-              <p class="fx-note">entrou − saiu por mês (ou o saldo acumulado, no modo rolled over), em US$ na cotação de hoje.</p>
+              <p class="fx-note">entrou − saiu por mês (ou o saldo acumulado, no modo rolled over), convertido na cotação de hoje.</p>
             </article>
 
             <article class="fin-card savings-card">
@@ -297,8 +303,8 @@
               <select name="cat" aria-label="Bucket ou conta"></select>
               <input name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="valor" required aria-label="Valor" />
               <select name="cur" aria-label="Moeda">
-                <option value="USD">USD</option>
                 <option value="BRL">BRL</option>
+                <option value="USD">USD</option>
               </select>
               <button type="submit">+ adicionar</button>
             </form>
@@ -716,6 +722,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=19"></script>
   </body>
 </html>

@@ -332,7 +332,11 @@ const saveFinance = () => {
   store.set("bills", bills);
 };
 
-const fin = { offset: 0, view: store.get("fin-view", "month") };
+const fin = { offset: 0, view: store.get("fin-view", "month"), base: store.get("fin-base", "BRL") };
+// Totals are kept in US$ internally; these show them in the chosen main currency (and the other one small).
+const conv = (usd) => (fin.base === "BRL" ? usd * rate() : usd);
+const show = (usd) => money(conv(usd), fin.base);
+const showOther = (usd) => (fin.base === "BRL" ? money(usd, "USD") : money(usd * rate(), "BRL"));
 // Manual starting points for the rolled-over balance: { "YYYY-MM": amount carried into that month }.
 let rollover = store.get("rollover", {});
 const selectedMonth = () => {
@@ -423,8 +427,8 @@ function renderSummary() {
     el("div", { className: "stat " + cls },
       el("span", { className: "stat-sticker", textContent: sticker, ariaHidden: "true" }),
       el("span", { className: "stat-label", textContent: label }),
-      el("strong", { textContent: (value < 0 ? "−" : "") + money(Math.abs(value), "USD") }),
-      el("small", { textContent: money(value * rate(), "BRL") }),
+      el("strong", { textContent: (value < 0 ? "−" : "") + show(Math.abs(value)) }),
+      el("small", { textContent: (value < 0 ? "−" : "") + showOther(Math.abs(value)) }),
       extra || "");
   const end = rolled ? carry + t.net : t.net;
   const tiles = [
@@ -433,8 +437,13 @@ function renderSummary() {
     tile("guardado", t.saved, "saved", "🐷"),
   ];
   if (rolled) {
-    const edit = el("input", { type: "number", step: "0.01", value: Math.round(carry * 100) / 100, ariaLabel: "Valor que veio do mês passado" });
-    edit.addEventListener("change", () => { rollover[month] = parseFloat(edit.value) || 0; store.set("rollover", rollover); renderFinance(); });
+    const edit = el("input", { type: "number", step: "0.01", value: Math.round(conv(carry) * 100) / 100, ariaLabel: "Valor que veio do mês passado" });
+    edit.addEventListener("change", () => {
+      const v = parseFloat(edit.value) || 0;
+      rollover[month] = fin.base === "BRL" ? v / rate() : v;
+      store.set("rollover", rollover);
+      renderFinance();
+    });
     const restart = el("button", { type: "button", textContent: "restart", title: "Começar este mês do zero" });
     restart.addEventListener("click", () => { rollover[month] = 0; store.set("rollover", rollover); renderFinance(); });
     const controls = el("div", { className: "carry-controls" }, el("label", {}, el("span", { textContent: "editar" }), edit), restart);
@@ -449,7 +458,17 @@ function renderSummary() {
   const box = document.getElementById("fin-summary");
   box.classList.toggle("rolled", rolled);
   box.replaceChildren(...tiles);
-  document.querySelectorAll(".view-toggle button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === fin.view)));
+  document.querySelectorAll(".base-toggle button").forEach((b) =>
+  b.addEventListener("click", () => {
+    fin.base = b.dataset.base;
+    store.set("fin-base", fin.base);
+    ["ledger-form"].forEach((id) => { const f = document.getElementById(id); if (f) f.cur.value = fin.base; });
+    renderFinance();
+  })
+);
+
+document.querySelectorAll(".view-toggle button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === fin.view)));
+  document.querySelectorAll(".base-toggle button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.base === fin.base)));
 }
 
 document.querySelectorAll(".view-toggle button").forEach((b) =>
@@ -479,7 +498,7 @@ function renderFinChart() {
     d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
   }
   const area = `${d} L${R},${mid} L${L},${mid} Z`;
-  const fmt = (v) => `${v < 0 ? "−" : "+"}$${Math.round(Math.abs(v)).toLocaleString("en-US")}`;
+  const fmt = (v) => `${v < 0 ? "−" : "+"}${fin.base === "BRL" ? "R$" : "$"}${Math.round(Math.abs(conv(v))).toLocaleString(fin.base === "BRL" ? "pt-BR" : "en-US")}`;
   let out = `
     <defs>
       <clipPath id="fc-above"><rect x="0" y="0" width="${W}" height="${mid}" /></clipPath>
@@ -517,24 +536,28 @@ function renderFinChart() {
 
 /* ---------- finance: savings ---------- */
 
+// Savings live in reais: the base balance is typed in R$ and deposits are converted to R$.
+const toBRL = (amount, cur) => (cur === "BRL" ? amount : amount * rate());
+
 function renderSavings() {
   const list = document.getElementById("savings-list");
   let total = 0;
   list.replaceChildren(
     ...accounts.map((acc, i) => {
-      const deposits = sumUSD(tx.filter((t) => t.kind === "savings" && t.cat === acc.id));
+      const deposits = tx.filter((t) => t.kind === "savings" && t.cat === acc.id).reduce((a, t) => a + toBRL(t.amount, t.cur), 0);
       const balance = (acc.base || 0) + deposits;
       total += balance;
       const name = el("input", { value: acc.name, className: "acc-name", ariaLabel: "Nome da conta" });
       name.addEventListener("change", () => { acc.name = name.value.trim() || acc.name; saveFinance(); renderFinance(); });
-      const base = el("input", { type: "number", step: "0.01", value: acc.base || "", placeholder: "0", ariaLabel: "Saldo inicial" });
+      const base = el("input", { type: "number", step: "0.01", value: acc.base || "", placeholder: "0", ariaLabel: "Saldo base em reais" });
       base.addEventListener("change", () => { acc.base = parseFloat(base.value) || 0; saveFinance(); renderFinance(); });
       const li = el("li", { className: "jar jar-" + (i % 3) },
         el("span", { className: "jar-lid", ariaHidden: "true" }),
         name,
-        el("strong", { className: "jar-balance", textContent: money(balance, "USD") }),
-        el("label", { className: "jar-base" }, el("span", { textContent: "saldo base US$" }), base),
-        el("small", { textContent: deposits ? `+ ${money(deposits, "USD")} guardado aqui` : "nenhum depósito logado" }));
+        el("strong", { className: "jar-balance", textContent: money(balance, "BRL") }),
+        el("small", { className: "jar-usd", textContent: "≈ " + money(balance / rate(), "USD") }),
+        el("label", { className: "jar-base" }, el("span", { textContent: "saldo base R$" }), base),
+        el("small", { textContent: deposits ? `+ ${money(deposits, "BRL")} guardado aqui` : "nenhum depósito logado" }));
       li.dataset.balance = balance;
       return li;
     })
@@ -546,7 +569,7 @@ function renderSavings() {
     const b = +j.dataset.balance;
     j.style.setProperty("--fill", fullest > 0 && b > 0 ? `${Math.max(10, (b / fullest) * 78)}%` : "0%");
   });
-  document.getElementById("savings-total").textContent = `total guardado: ${money(total, "USD")} · ${money(total * rate(), "BRL")}`;
+  document.getElementById("savings-total").textContent = `total guardado: ${money(total, "BRL")} · ≈ ${money(total / rate(), "USD")}`;
 }
 
 /* ---------- finance: fixed expenses ---------- */
@@ -641,9 +664,10 @@ function renderBuckets() {
       const items = month.filter((t) => t.kind === "out" && t.cat === b.id).sort((x, y) => y.date.localeCompare(x.date));
       const form = el("form", { className: "bucket-form" },
         el("input", { name: "desc", placeholder: "o quê?", required: true, ariaLabel: `Gasto em ${b.label}` }),
-        el("input", { name: "amount", type: "number", step: "0.01", min: "0", placeholder: "$", required: true, ariaLabel: "Valor" }),
-        el("select", { name: "cur", ariaLabel: "Moeda" }, el("option", { textContent: "USD" }), el("option", { textContent: "BRL" })),
+        el("input", { name: "amount", type: "number", step: "0.01", min: "0", placeholder: fin.base === "BRL" ? "R$" : "$", required: true, ariaLabel: "Valor" }),
+        el("select", { name: "cur", ariaLabel: "Moeda" }, el("option", { textContent: "BRL" }), el("option", { textContent: "USD" })),
         el("button", { type: "submit", textContent: "+", ariaLabel: "Adicionar gasto" }));
+      form.cur.value = fin.base;
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         tx.push({ id: uid(), date: entryDate(), desc: form.desc.value.trim(), kind: "out", cat: b.id, amount: parseFloat(form.amount.value) || 0, cur: form.cur.value });
@@ -654,7 +678,7 @@ function renderBuckets() {
       return el("article", { className: `bucket bucket-${b.id} tone-${i}` },
         el("span", { className: "bucket-sticker", textContent: b.sticker, ariaHidden: "true", style: `--r:${tilt(b.id, 12)}deg` }),
         el("h4", { textContent: b.label }),
-        el("strong", { className: "bucket-total", textContent: money(sumUSD(items), "USD") }),
+        el("strong", { className: "bucket-total", textContent: show(sumUSD(items)) }),
         el("ul", { className: "bucket-items" },
           ...(items.length
             ? items.map((t) => {
@@ -718,7 +742,10 @@ function renderLedger() {
     body.append(el("tr", {}, el("td", { colSpan: 7, className: "empty", textContent: "nada logado neste mês ainda." })));
   }
   const form = document.getElementById("ledger-form");
-  if (!form.date.value) form.date.value = entryDate();
+  if (!form.date.value) {
+    form.date.value = entryDate();
+    form.cur.value = fin.base;
+  }
   const keep = form.cat.value;
   fillSelect(form.cat, form.kind.value, keep);
 }

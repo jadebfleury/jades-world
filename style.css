@@ -2882,8 +2882,15 @@ select {
   background: var(--mustard);
 }
 
-.view-toggle {
+.fin-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 18px;
+}
+
+.jar-usd {
+  margin-top: -4px;
 }
 
 .fin-summary.rolled {
