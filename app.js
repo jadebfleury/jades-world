@@ -312,18 +312,18 @@ if (!tx) {
 // Two savings accounts (one in R$, one in US$) and three investment accounts in R$.
 // Each account keeps its base balance in its own currency.
 const DEFAULT_ACCOUNTS = [
-  { id: "acc1", name: "savings R$", type: "savings", cur: "BRL", base: 0 },
-  { id: "acc2", name: "savings US$", type: "savings", cur: "USD", base: 0 },
-  { id: "acc3", name: "investimento 1", type: "invest", cur: "BRL", base: 0 },
-  { id: "acc4", name: "investimento 2", type: "invest", cur: "BRL", base: 0 },
-  { id: "acc5", name: "investimento 3", type: "invest", cur: "BRL", base: 0 },
+  { id: "acc1", name: "savings R$", type: "savings", cur: "BRL", base: 240.79 },
+  { id: "acc2", name: "savings US$", type: "savings", cur: "USD", base: 110.96 },
+  { id: "acc3", name: "investimento 1", type: "invest", cur: "BRL", base: 2003.33 },
+  { id: "acc4", name: "investimento 2", type: "invest", cur: "BRL", base: 2440.04 },
+  { id: "acc5", name: "investimento 3", type: "invest", cur: "BRL", base: 502.13 },
 ];
 let accounts = store.get("accounts", DEFAULT_ACCOUNTS);
 // Older saves had three untyped "savings N" jars; give them the new shape, keeping any custom names.
 if (accounts.some((a) => !a.type)) {
   accounts = DEFAULT_ACCOUNTS.map((d) => {
     const old = accounts.find((a) => a.id === d.id);
-    return old ? { ...d, base: old.base || 0, name: /^savings \d$/.test(old.name) ? d.name : old.name } : d;
+    return old ? { ...d, base: old.base || d.base, name: /^savings \d$/.test(old.name) ? d.name : old.name } : d;
   });
   store.set("accounts", accounts);
 }
@@ -345,7 +345,7 @@ const saveFinance = () => {
   store.set("bills", bills);
 };
 
-const fin = { offset: 0, view: store.get("fin-view", "month"), base: store.get("fin-base", "BRL") };
+const fin = { offset: 0, view: store.get("fin-view", "month"), base: store.get("fin-base", "USD") };
 // Totals are kept in US$ internally; these show them in the chosen main currency (and the other one small).
 const conv = (usd) => (fin.base === "BRL" ? usd * rate() : usd);
 const show = (usd) => money(conv(usd), fin.base);
