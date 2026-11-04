@@ -73,6 +73,7 @@
         <a class="tab tab-work" href="#enpower">EnPower</a>
         <a class="tab tab-work" href="#brasa">BRASA</a>
         <a class="tab tab-work" href="#ppe">PPE</a>
+        <a class="tab tab-work" href="#rem">Rem</a>
       </nav>
 
       <main>
@@ -180,6 +181,16 @@
               </svg>
               <span class="postmark">PPE</span>
               <strong>PPE</strong>
+            </a>
+
+            <a class="postage rem" href="#rem">
+              <span class="perforation"></span>
+              <svg class="mini-illu" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M32 10 C20 22 20 42 32 54 C44 42 44 22 32 10 Z" fill="#f4ead5" />
+                <path d="M32 18 V48" stroke="#7a4a6b" stroke-width="2" />
+              </svg>
+              <span class="postmark">REM</span>
+              <strong>Rem</strong>
             </a>
           </section>
 
@@ -505,6 +516,34 @@
                   <button type="submit">+</button>
                 </form>
                 <div class="note-board" data-notes-board="upcoming-ppe"></div>
+              </div>
+            </div>
+            <a class="back" href="#home">← voltar pra parede</a>
+          </div>
+        </section>
+
+        <section id="rem" class="spread spread-blank spread-rem" aria-labelledby="rem-title">
+          <div class="blank-page wide-page">
+            <span class="paperclip" aria-hidden="true"></span>
+            <p class="blank-kicker">work · Rem</p>
+            <h2 id="rem-title">Rem</h2>
+            <div class="planner">
+              <div class="paper" data-list="rem">
+                <h3>to do</h3>
+                <form class="todo-form">
+                  <input type="text" placeholder="escreve aqui…" aria-label="Nova tarefa" required />
+                  <button type="submit" aria-label="Adicionar tarefa">+</button>
+                </form>
+                <ul class="todo-list"></ul>
+              </div>
+              <div class="upcoming">
+                <h3>upcoming</h3>
+                <form class="note-form" data-notes="upcoming-rem">
+                  <input name="text" type="text" placeholder="o que vem aí…" required aria-label="Novo upcoming" />
+                  <input name="date" type="date" aria-label="Data" />
+                  <button type="submit">+</button>
+                </form>
+                <div class="note-board" data-notes-board="upcoming-rem"></div>
               </div>
             </div>
             <a class="back" href="#home">← voltar pra parede</a>

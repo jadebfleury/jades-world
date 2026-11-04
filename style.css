@@ -344,6 +344,7 @@ body:has(#hobbies:target) .tab[href="#hobbies"],
 body:has(#enpower:target) .tab[href="#enpower"],
 body:has(#brasa:target) .tab[href="#brasa"],
 body:has(#ppe:target) .tab[href="#ppe"],
+body:has(#rem:target) .tab[href="#rem"],
 body:has(#uf:target) .tab[href="#uf"],
 body:has(#uf-bf:target) .tab[href="#uf"],
 body:has(#uf-ai:target) .tab[href="#uf"],
@@ -507,7 +508,7 @@ body:has(.spread:target) #home:not(:target) {
 
 .stamps-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
   margin-top: 42px;
   align-items: stretch;
@@ -544,6 +545,7 @@ body:has(.spread:target) #home:not(:target) {
 
 .postage.green { background-color: #5f7044; }
 .postage.denim { background-color: #3d5a73; }
+.postage.rem { background-color: #7a4a6b; }
 .postage.uf { background-color: #b0732f; }
 
 .postage:hover,
