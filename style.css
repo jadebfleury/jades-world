@@ -3739,3 +3739,197 @@ select {
     display: none;
   }
 }
+
+/* ---------- food & calorie log (wellness) ---------- */
+
+.food {
+  margin-top: 36px;
+}
+
+.food h3 {
+  margin: 0;
+}
+
+.food-total {
+  margin-left: auto;
+  padding: 2px 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.food-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 22px 16px;
+  margin-top: 18px;
+}
+
+.postit.food-meal {
+  display: flex;
+  flex-direction: column;
+  min-height: 170px;
+  margin: 0;
+  padding: 18px 12px 10px;
+}
+
+.food-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed rgba(36, 28, 22, 0.25);
+}
+
+.food-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.food-sum {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.food-items {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.food-items li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.food-what {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.food-kcal {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+.food-items .x {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.food-items li:hover .x,
+.food-items .x:focus-visible {
+  opacity: 1;
+}
+
+.food-items .food-empty {
+  color: rgba(36, 28, 22, 0.4);
+}
+
+.food-form {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.food-form input {
+  min-width: 0;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(36, 28, 22, 0.15);
+  border-radius: 3px;
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
+.food-form input[name="what"] { flex: 1; }
+.food-form input[name="kcal"] { width: 56px; flex: 0 0 auto; }
+
+.food-form button {
+  width: 28px;
+  flex: 0 0 auto;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.food-week {
+  margin-top: 26px;
+  padding: 12px 14px;
+  background: #fffdf7;
+  border: 1px solid rgba(36, 28, 22, 0.12);
+  border-radius: 6px;
+}
+
+.food-week-title {
+  margin: 0 0 10px;
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.food-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.food-wday {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.food-wday.today { background: rgba(212, 160, 60, 0.14); }
+.food-wday.selected { border-color: var(--ink); }
+
+.food-bar-wrap {
+  display: flex;
+  align-items: flex-end;
+  width: 60%;
+  height: 70px;
+}
+
+.food-bar {
+  width: 100%;
+  min-height: 2px;
+  background: var(--rose);
+  border-radius: 4px 4px 0 0;
+}
+
+.food-wnum {
+  font-family: "Special Elite", ui-monospace, monospace;
+  font-size: 0.68rem;
+}
+
+.food-wname {
+  font-size: 1.1rem;
+  font-weight: 700;
+}

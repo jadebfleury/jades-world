@@ -1190,6 +1190,117 @@ function renderHabits() {
 document.getElementById("habits-prev")?.addEventListener("click", () => { habits.offset--; renderHabits(); });
 document.getElementById("habits-next")?.addEventListener("click", () => { habits.offset++; renderHabits(); });
 
+/* ---------- food & calorie log (wellness) ---------- */
+
+const MEALS = [
+  { key: "cafe", label: "café da manhã", emoji: "☕", color: "yellow" },
+  { key: "almoco", label: "almoço", emoji: "🥪", color: "pink" },
+  { key: "lanche", label: "lanche", emoji: "🍓", color: "mint" },
+  { key: "janta", label: "janta", emoji: "🍝", color: "blue" },
+];
+const food = { data: store.get("food", null), day: iso(new Date()) };
+if (!food.data) {
+  // First run: start with the log Jade sent on 8 nov 2026.
+  food.data = {
+    "2026-11-08": {
+      cafe: [{ id: uid(), what: "café da manhã", kcal: 510 }],
+      almoco: [{ id: uid(), what: "sandwich + cappuccino", kcal: 650 }],
+      lanche: [{ id: uid(), what: "Red Bull", kcal: 110 }],
+    },
+  };
+  store.set("food", food.data);
+}
+const kcal = (n) => `${Math.round(n).toLocaleString("pt-BR")} kcal`;
+const mealSum = (day, meal) => (food.data[day]?.[meal] || []).reduce((a, i) => a + (Number(i.kcal) || 0), 0);
+const daySum = (day) => MEALS.reduce((a, m) => a + mealSum(day, m.key), 0);
+const shiftDay = (key, n) => {
+  const d = parseIso(key);
+  return iso(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n));
+};
+
+function saveFood(day, meal, items) {
+  food.data[day] = { ...food.data[day], [meal]: items };
+  if (!items.length) delete food.data[day][meal];
+  if (!Object.keys(food.data[day]).length) delete food.data[day];
+  store.set("food", food.data);
+  renderFood();
+}
+
+function renderFood() {
+  const board = document.getElementById("food-board");
+  if (!board) return;
+  const day = food.day;
+  const offset = daysUntil(parseIso(day));
+  document.getElementById("food-day").textContent =
+    offset === 0 ? "hoje" : offset === -1 ? "ontem" : offset === 1 ? "amanhã" : fmtDate(parseIso(day));
+  document.getElementById("food-total").textContent = `total: ${kcal(daySum(day))}`;
+
+  board.replaceChildren(
+    ...MEALS.map((m) => {
+      const items = food.data[day]?.[m.key] || [];
+      const list = el("ul", { className: "food-items" },
+        ...items.map((it) => {
+          const del = el("button", { type: "button", className: "x", textContent: "×", ariaLabel: `Apagar ${it.what}` });
+          del.addEventListener("click", () => saveFood(day, m.key, items.filter((i) => i.id !== it.id)));
+          return el("li", {}, el("span", { className: "food-what", textContent: it.what }), el("span", { className: "food-kcal", textContent: Math.round(it.kcal) }), del);
+        })
+      );
+      if (!items.length) list.append(el("li", { className: "food-empty", textContent: "nada ainda…" }));
+      const form = el("form", { className: "food-form" },
+        el("input", { name: "what", type: "text", placeholder: "o que foi?", required: true, ariaLabel: `O que comeu no ${m.label}` }),
+        el("input", { name: "kcal", type: "number", min: "0", step: "1", placeholder: "kcal", required: true, ariaLabel: "Calorias" }),
+        el("button", { type: "submit", textContent: "+", ariaLabel: `Adicionar ao ${m.label}` })
+      );
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const what = form.what.value.trim();
+        const n = Number(form.kcal.value);
+        if (!what || !(n >= 0)) return;
+        saveFood(day, m.key, [...items, { id: uid(), what, kcal: n }]);
+        document.querySelector(`.food-meal.${m.key} input[name=what]`)?.focus();
+      });
+      const card = el("div", { className: `postit food-meal ${m.color} ${m.key}` },
+        el("div", { className: "food-head" },
+          el("span", { className: "food-label", textContent: `${m.emoji} ${m.label}` }),
+          el("span", { className: "food-sum", textContent: kcal(mealSum(day, m.key)) })),
+        list, form);
+      card.style.setProperty("--r", tilt(day + m.key, 2.5) + "deg");
+      return card;
+    })
+  );
+
+  // Week strip (seg → dom) for the week of the selected day.
+  const d = parseIso(day);
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+  const days = [...Array(7)].map((_, i) => iso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)));
+  const sums = days.map(daySum);
+  const logged = sums.filter((s) => s > 0);
+  const total = logged.reduce((a, s) => a + s, 0);
+  const max = Math.max(...sums, 1);
+  const today = iso(new Date());
+  document.getElementById("food-week-title").textContent =
+    `semana de ${monday.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · ${kcal(total)}` +
+    (logged.length ? ` · média ${kcal(total / logged.length)}/dia (${logged.length} dia${logged.length === 1 ? "" : "s"} logado${logged.length === 1 ? "" : "s"})` : "");
+  document.getElementById("food-week-days").replaceChildren(
+    ...days.map((k, i) => {
+      const btn = el("button", {
+        type: "button",
+        className: "food-wday" + (k === day ? " selected" : "") + (k === today ? " today" : ""),
+        ariaLabel: `${fmtDate(parseIso(k))}: ${kcal(sums[i])}`,
+      },
+        el("span", { className: "food-bar-wrap" }, el("span", { className: "food-bar", style: `height:${(sums[i] / max) * 100}%` })),
+        el("span", { className: "food-wnum", textContent: sums[i] ? Math.round(sums[i]) : "–" }),
+        el("span", { className: "food-wname", textContent: parseIso(k).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "") })
+      );
+      btn.addEventListener("click", () => { food.day = k; renderFood(); });
+      return btn;
+    })
+  );
+}
+
+document.getElementById("food-prev")?.addEventListener("click", () => { food.day = shiftDay(food.day, -1); renderFood(); });
+document.getElementById("food-next")?.addEventListener("click", () => { food.day = shiftDay(food.day, 1); renderFood(); });
+
 /* ---------- exam countdown + study hours (UF classes) ---------- */
 
 document.querySelectorAll("[data-countdown]").forEach((box) => {
@@ -1503,6 +1614,7 @@ renderPaydays();
 renderFinance();
 renderStickerSheet();
 renderHabits();
+renderFood();
 renderBooks();
 renderArt();
 renderNotebooks();
